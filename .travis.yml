@@ -6,7 +6,7 @@ matrix:
 
   # Ubuntu, g++-6
   - os: linux
-    dist: xenial
+    dist: focal
     compiler: gcc
     addons:
         apt:
@@ -15,14 +15,24 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - libboost-all-dev
-            - g++-6
+            - g++-9
+        sonarcloud:
+          organization: "pidapica"
+          token:
+            secure: "fSNFTJJQbgtr2ndlPBbhMyL5v8cJyjWKKmBXgCpRGB+3KXuYtdCyUI79xXFNbT3N4HIgHRITGYcJrbFaeJ42FFtEioDyXQf5hAX0ljjUPRCJGwzgo3SWQHfc2ReOAtHocqFwVoheaPsMoBwJKNaTVcFg24Jxf5JaKXDI1Gk644wiFtgOFPKxLVrqP08YTa0lLEnKhAWfxqcefLpaxXwHlMaBTWYpSfQS3qK3T7ZPX0aQ8HXYrqnFEQBHpwoqiyAjKl23GVsWAPlmds8upcTRQCURvdklSO+bHFWANYwCGu4fhCFN6R2fOaYcqmNMhBoRYt2YjeljGmYDq32ExTUxvIjWsDsKU1BxHHIjbEnqjwgHwruNXf6EXpNv3b33sPgQqtRCn7YRVfETY2VKFCghqtJrzCm765IYwGb85i/9SXkwL4nSX7S6dZ/QJZxpTWPx9lohit8KA8wEkMfitOmqnu7LGceYy9P7KchRzNVGdSv/ynCF2NkDbWu+hEjvQRjCxN22Tx5GWtD80czXQmMMbCKX4EO+IdjyD9kj7sdORwOTnrFd+SAHMLDtBNGxNezBrazYupdNxau8UwaEpJRi3YNxhFbCVKOjXysIyO0AvKez5erNOuTTzAQm9Ajm3Q4QPNXzVQn1o1WquDHhAZozNOGptx4bnX5nBGrjLKmC3C8="
     env:
-    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+    - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
     - LABEL="linux"
     - _DEPLOY="true"
 
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DSTATIC=true ..
-  - make
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
+  - cd ..
+  # Wraps the compilation with the Build Wrapper to generate configuration (used
+  # later by the SonarScanner) into the "bw-output" folder
+  - build-wrapper-linux-x86-64 --out-dir bw-output cmake --build build/
+  # And finally run the SonarCloud analysis - read the "sonar-project.properties"
+  # file to see the specific configuration
+  - sonar-scanner -Dsonar.cfamily.build-wrapper-output=bw-output
